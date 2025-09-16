@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    https://twitch.tv/
-// @version      1.4
+// @version      1.5
 // @description  Auto-set sort to "opt1" (Viewers High->Low) with configurable run policy
 // @author       Vikindor
 // @license      MIT
@@ -76,6 +76,11 @@
         { filter: (el) => !!(el.offsetParent || el.getClientRects().length) }
       );
       safeClick(option);
+	  
+	  // remove focus to avoid white outline on <h1>Browse
+	  setTimeout(() => {
+	  document.activeElement?.blur();
+	  }, 0);
 
       markRan();
     } catch (_) {
