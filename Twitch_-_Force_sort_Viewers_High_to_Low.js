@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    https://twitch.tv/
-// @version      1.5
+// @version      1.6
 // @description  Auto-set sort to "opt1" (Viewers High->Low) with configurable run policy
 // @author       Vikindor
 // @license      MIT
@@ -41,6 +41,37 @@
 
   const safeClick = (el) => { try { el.click(); } catch (_) {} };
 
+  // ---------------- Defocus helpers ----------------
+  // Kills focus on Twitch headings that grab focus on page open (Browse h1, channel title h1, etc.)
+  const HEADING_FOCUS_SEL = [
+    'h1.tw-title',
+    'h1[tabindex="-1"]',
+    '[role="heading"].tw-title',
+    '[data-test-selector="channel-header-title"] h1',
+  ].join(',');
+
+  function defocusWeirdHeading() {
+    const el = document.activeElement;
+    if (!el || el === document.body) return;
+    // Only defocus known heading-like elements
+    if (
+      el.matches(HEADING_FOCUS_SEL) ||
+      ((el.getAttribute('role') === 'heading' || /^H\d$/.test(el.tagName)) && el.tabIndex === -1)
+    ) {
+      try { el.blur(); } catch (_) {}
+    }
+  }
+
+  // So outline doesn't flash even for a tick
+  (function injectNoOutlineCSS() {
+    const css = `
+      ${HEADING_FOCUS_SEL}:focus { outline: none !important; box-shadow: none !important; }
+    `;
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.documentElement.appendChild(style);
+  })();
+
   // keying
   const urlPart = () => {
     const u = new URL(location.href);
@@ -59,7 +90,11 @@
   const markRan = () => sessionStorage.setItem(keyForUrl(), '1');
 
   async function ensureSortOpt1() {
-    if (!document.querySelector(`[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`)) return;
+    // If no sort combobox on this page (e.g., channel page), still remove accidental focus
+    if (!document.querySelector(`[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`)) {
+      defocusWeirdHeading();
+      return;
+    }
     if (alreadyRan()) return;
 
     try {
@@ -68,7 +103,11 @@
       );
 
       const current = combo.getAttribute('aria-activedescendant') || '';
-      if (current.endsWith(TARGET_SUFFIX)) { markRan(); return; }
+      if (current.endsWith(TARGET_SUFFIX)) {
+        defocusWeirdHeading();
+        markRan();
+        return;
+      }
 
       safeClick(combo);
       const option = await waitFor(
@@ -76,20 +115,22 @@
         { filter: (el) => !!(el.offsetParent || el.getClientRects().length) }
       );
       safeClick(option);
-	  
-	  // remove focus to avoid white outline on <h1>Browse
-	  setTimeout(() => {
-	  document.activeElement?.blur();
-	  }, 0);
+
+      // Remove focus that sometimes lands on page headings
+      setTimeout(defocusWeirdHeading, 0);
 
       markRan();
     } catch (_) {
       // silent fail
+      setTimeout(defocusWeirdHeading, 0);
     }
   }
 
   // initial run
-  setTimeout(ensureSortOpt1, 1000);
+  setTimeout(() => { defocusWeirdHeading(); ensureSortOpt1(); }, 500);
+
+  // Also catch any later unexpected focus (e.g., Twitch scripts refocus)
+  window.addEventListener('focusin', defocusWeirdHeading, true);
 
   // SPA navigation hook
   (function hookHistory() {
@@ -101,6 +142,6 @@
   })();
 
   window.addEventListener('locationchange', () => {
-    setTimeout(ensureSortOpt1, 600);
+    setTimeout(() => { defocusWeirdHeading(); ensureSortOpt1(); }, 600);
   });
 })();
