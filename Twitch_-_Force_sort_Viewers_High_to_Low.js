@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
-// @namespace    https://twitch.tv/
-// @version      1.6
-// @description  Auto-set sort to "opt1" (Viewers High->Low) with configurable run policy
-// @author       Vikindor
+// @namespace    twitch-force-sort-viewers
+// @version      1.7
+// @description  Auto-set sort to "Viewers High->Low" with configurable run policy
+// @author       Vikindor (https://vikindor.github.io/)
+// @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
+// @supportURL   https://github.com/Vikindor/twitch-force-sort-viewers/issues
 // @license      MIT
 // @match        https://www.twitch.tv/*
 // @grant        none
@@ -15,18 +17,45 @@
 
   // ---------------- CONFIG ----------------
   // RUN_POLICY options:
-  //  - 'perTab'  : run once per URL per tab session (F5 won't run again)
-  //  - 'perLoad' : run once per URL per page load (F5 will run again)
-  const RUN_POLICY = 'perTab'; // If necessary, change this option and save changes
+  // - 'perLoad' : run once per URL per page load (F5 will run again)
+  // - 'perTab'  : run once per URL per tab session (F5 won't run again)
+  const RUN_POLICY = 'perLoad';
 
-  // Substring that appears in sort dropdown ids/controls
   const SORT_ID_SUBSTR = 'browse-sort-drop-down';
-
-  // The target option id suffix: "opt1" = Viewers (High to Low) in current Twitch UI
   const TARGET_SUFFIX = 'opt1';
+  const TARGET_LABELS = [
+    "Viewers (High to Low)",
+    "Seere (høj-lav)",
+    "Zuschauer (viel -> wenig)",
+    "Espectadores (descend.)",
+    "Más espectadores",
+    "Spectateurs (décroissant)",
+    "Spettatori (decr.)",
+    "Nézők száma (csökkenő)",
+    "Kijkers (hoog - laag)",
+    "Seere (høyt til lavt)",
+    "Widzów (najwięcej)",
+    "Espetadores (ordem desc.)",
+    "Espectadores (ordem decrescente)",
+    "Vizualizatori (mare la mic)",
+    "Divákov (zostupne)",
+    "Katsojaluku (suurin ensin)",
+    "Tittare (flest först)",
+    "Lượng xem (Cao đến thấp)",
+    "İzleyici (çoktan aza)",
+    "Diváků (sestupně)",
+    "Θεατές (Φθίν. ταξιν.)",
+    "Зрители (низходящ ред)",
+    "Аудитория (по убыв.)",
+    "ผู้ชม (สูงไปต่ำ)",
+    "المشاهدون (من الأعلى إلى الأقل)",
+    "观众人数（高到低）",
+    "觀眾人數 (高到低)",
+    "視聴者数（降順）",
+    "시청자 수 (높은 순)"
+  ];
   // ---------------------------------------
 
-  // utils
   const waitFor = (selector, { timeout = 15000, interval = 150, filter = null } = {}) =>
     new Promise((resolve, reject) => {
       const t0 = Date.now();
@@ -41,8 +70,6 @@
 
   const safeClick = (el) => { try { el.click(); } catch (_) {} };
 
-  // ---------------- Defocus helpers ----------------
-  // Kills focus on Twitch headings that grab focus on page open (Browse h1, channel title h1, etc.)
   const HEADING_FOCUS_SEL = [
     'h1.tw-title',
     'h1[tabindex="-1"]',
@@ -52,8 +79,9 @@
 
   function defocusWeirdHeading() {
     const el = document.activeElement;
+
     if (!el || el === document.body) return;
-    // Only defocus known heading-like elements
+
     if (
       el.matches(HEADING_FOCUS_SEL) ||
       ((el.getAttribute('role') === 'heading' || /^H\d$/.test(el.tagName)) && el.tabIndex === -1)
@@ -62,7 +90,6 @@
     }
   }
 
-  // So outline doesn't flash even for a tick
   (function injectNoOutlineCSS() {
     const css = `
       ${HEADING_FOCUS_SEL}:focus { outline: none !important; box-shadow: none !important; }
@@ -72,13 +99,12 @@
     document.documentElement.appendChild(style);
   })();
 
-  // keying
   const urlPart = () => {
     const u = new URL(location.href);
-    u.searchParams.delete('sort'); // ignore Twitch sort param
+    u.searchParams.delete('sort');
     return `${u.pathname}${u.search}`;
   };
-  const loadPart = () => `${performance.timeOrigin}`; // unique per page load
+  const loadPart = () => `${performance.timeOrigin}`;
 
   const keyForUrl = () => {
     if (RUN_POLICY === 'perLoad') return `tw_sort_opt1_${urlPart()}_${loadPart()}`;
@@ -89,8 +115,9 @@
   const alreadyRan = () => !!sessionStorage.getItem(keyForUrl());
   const markRan = () => sessionStorage.setItem(keyForUrl(), '1');
 
+
   async function ensureSortOpt1() {
-    // If no sort combobox on this page (e.g., channel page), still remove accidental focus
+
     if (!document.querySelector(`[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`)) {
       defocusWeirdHeading();
       return;
@@ -101,6 +128,15 @@
       const combo = await waitFor(
         `[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
       );
+
+
+      const labelEl = combo.querySelector('[data-a-target="tw-core-button-label-text"]');
+      const labelText = (labelEl ? labelEl.textContent : combo.textContent || '').trim();
+      if (TARGET_LABELS.includes(labelText)) {
+        defocusWeirdHeading();
+        markRan();
+        return;
+      }
 
       const current = combo.getAttribute('aria-activedescendant') || '';
       if (current.endsWith(TARGET_SUFFIX)) {
@@ -116,23 +152,20 @@
       );
       safeClick(option);
 
-      // Remove focus that sometimes lands on page headings
+
       setTimeout(defocusWeirdHeading, 0);
 
       markRan();
     } catch (_) {
-      // silent fail
+
       setTimeout(defocusWeirdHeading, 0);
     }
   }
 
-  // initial run
   setTimeout(() => { defocusWeirdHeading(); ensureSortOpt1(); }, 500);
 
-  // Also catch any later unexpected focus (e.g., Twitch scripts refocus)
   window.addEventListener('focusin', defocusWeirdHeading, true);
 
-  // SPA navigation hook
   (function hookHistory() {
     const fire = () => window.dispatchEvent(new Event('locationchange'));
     const p = history.pushState, r = history.replaceState;
