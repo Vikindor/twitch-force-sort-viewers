@@ -19,7 +19,7 @@ Works on `/directory`, `/directory/all`, and other Twitch pages with the same so
 <img src="media/browse_sorting.jpg" width="400" alt="Browse page sorting screenshot" title="Browse page sorting"/><br>
 <img src="media/channels_sorting.jpg" width="400" alt="Channels page sorting screenshot" title="Channels page sorting"/>
 
-## 🔧 Installation
+## 🚀 Installation
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) (or another userscript manager).
 2. Install the script from one of the mirrors:
@@ -27,7 +27,7 @@ Works on `/directory`, `/directory/all`, and other Twitch pages with the same so
    - [OpenUserJS](https://openuserjs.org/scripts/Vikindor/Twitch_-_Force_sort_Viewers_High_to_Low)
    - Or [install directly from this repository](./Twitch_-_Force_sort_Viewers_High_to_Low.js).
 
-## ⚙️ Configuration
+## 🔧 Configuration
 
 Open the script in your userscript manager and change the value of:
 
