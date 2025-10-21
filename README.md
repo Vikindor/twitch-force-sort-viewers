@@ -16,8 +16,10 @@ Works on `/directory`, `/directory/all`, and other Twitch pages with the same so
 
 ## 🖼 Screenshots
 
-<img src="media/browse_sorting.jpg" width="400" alt="Browse page sorting screenshot" title="Browse page sorting"/><br>
-<img src="media/channels_sorting.jpg" width="400" alt="Channels page sorting screenshot" title="Channels page sorting"/>
+<p align="center">
+  <img src="media/browse_sorting.jpg" width="47%" alt="Browse page sorting screenshot" title="Browse page sorting" style="margin: 1%;" style="max-width: 100%;"/>
+  <img src="media/channels_sorting.jpg" width="47%" alt="Channels page sorting screenshot" title="Channels page sorting" style="margin: 1%;" style="max-width: 100%;"/>
+</p>
 
 ## 🚀 Installation
 
