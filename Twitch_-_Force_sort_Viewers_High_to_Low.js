@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    twitch-force-sort-viewers
-// @version      1.8
+// @version      1.8.1
 // @description  Auto-set sort to "Viewers High->Low" with configurable run policy
 // @author       Vikindor (https://vikindor.github.io/)
 // @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
