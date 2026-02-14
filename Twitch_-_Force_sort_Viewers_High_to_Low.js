@@ -20,7 +20,7 @@
   // - 'perLoad' : run once per URL per page load (F5 will run again)
   // - 'perTab'  : run once per URL per tab session (F5 won't run again)
   const RUN_POLICY = 'perLoad';
-
+  
   const SORT_ID_SUBSTR = 'browse-sort-drop-down';
   const TARGET_SUFFIX = 'opt1';
   const TARGET_LABELS = [
@@ -54,7 +54,7 @@
     "視聴者数（降順）",
     "시청자 수 (높은 순)"
   ];
-  // ---------------------------------------
+  // ----------------------------------------
 
   const waitFor = (selector, { timeout = 15000, interval = 150, filter = null } = {}) =>
     new Promise((resolve, reject) => {
