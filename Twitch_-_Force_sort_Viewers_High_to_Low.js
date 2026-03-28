@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    twitch-force-sort-viewers
-// @version      1.8.2
+// @version      1.8.3
 // @description  Auto-set sort to "Viewers High->Low" with configurable run policy
 // @author       Vikindor (https://vikindor.github.io/)
 // @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
@@ -23,6 +23,10 @@
   
   const SORT_ID_SUBSTR = 'browse-sort-drop-down';
   const TARGET_SUFFIX = 'opt1';
+  const SORT_COMBO_SELECTOR = [
+    `[role="combobox"][id*="${SORT_ID_SUBSTR}"]`,
+    `[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
+  ].join(', ');
   const TARGET_LABELS = [
     "Viewers (High to Low)",
     "Seere (høj-lav)",
@@ -119,9 +123,7 @@
     if (alreadyRan()) return;
 
     try {
-      const combo = await waitFor(
-        `[role="combobox"]#${SORT_ID_SUBSTR}, [role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
-      );
+      const combo = await waitFor(SORT_COMBO_SELECTOR);
 
 
       const labelEl = combo.querySelector('[data-a-target="tw-core-button-label-text"]');
