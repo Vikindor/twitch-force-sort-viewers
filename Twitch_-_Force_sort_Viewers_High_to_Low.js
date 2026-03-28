@@ -16,8 +16,8 @@
   'use strict';
 
   // ---------------- CONFIG ----------------
-  // 'perLoad' -> run once per URL per page load (F5 will run again)
-  // 'perTab'  -> run once per URL per tab session (F5 won't run again)
+  // 'perLoad' -> run once per URL on each page load; refreshing the page will apply the sort again
+  // 'perTab'  -> run once per URL per tab session; after that, it won't overwrite your manual sort changes
   const RUN_POLICY = 'perLoad';
   // ----------------------------------------
   
@@ -135,13 +135,11 @@
   const alreadyRan = () => !!sessionStorage.getItem(keyForUrl());
   const markRan = () => sessionStorage.setItem(keyForUrl(), '1');
 
-
   async function ensureSortOpt1() {
     if (alreadyRan()) return;
 
     try {
       const combo = await waitFor(SORT_COMBO_SELECTOR);
-
 
       const labelEl = combo.querySelector('[data-a-target="tw-core-button-label-text"]');
       const labelText = normalizeText(labelEl ? labelEl.textContent : combo.textContent);
