@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    twitch-force-sort-viewers
-// @version      1.8.1
+// @version      1.8.2
 // @description  Auto-set sort to "Viewers High->Low" with configurable run policy
 // @author       Vikindor (https://vikindor.github.io/)
 // @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
@@ -16,10 +16,10 @@
   'use strict';
 
   // ---------------- CONFIG ----------------
-  // RUN_POLICY options:
-  // - 'perLoad' : run once per URL per page load (F5 will run again)
-  // - 'perTab'  : run once per URL per tab session (F5 won't run again)
+  // 'perLoad' -> run once per URL per page load (F5 will run again)
+  // 'perTab'  -> run once per URL per tab session (F5 won't run again)
   const RUN_POLICY = 'perLoad';
+  // ----------------------------------------
   
   const SORT_ID_SUBSTR = 'browse-sort-drop-down';
   const TARGET_SUFFIX = 'opt1';
@@ -54,7 +54,6 @@
     "視聴者数（降順）",
     "시청자 수 (높은 순)"
   ];
-  // ----------------------------------------
 
   const waitFor = (selector, { timeout = 15000, interval = 150, filter = null } = {}) =>
     new Promise((resolve, reject) => {
@@ -117,16 +116,11 @@
 
 
   async function ensureSortOpt1() {
-
-    if (!document.querySelector(`[role="combobox"]#${SORT_ID_SUBSTR}`)) {
-      defocusWeirdHeading();
-      return;
-    }
     if (alreadyRan()) return;
 
     try {
       const combo = await waitFor(
-        `[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
+        `[role="combobox"]#${SORT_ID_SUBSTR}, [role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
       );
 
 
