@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    twitch-force-sort-viewers
-// @version      1.8.4
+// @version      1.8.6
 // @description  Auto-set sort to "Viewers High->Low" with configurable run policy
 // @author       Vikindor (https://vikindor.github.io/)
 // @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
@@ -21,11 +21,6 @@
   const RUN_POLICY = 'perLoad';
   // ----------------------------------------
   
-  const SORT_ID_SUBSTR = 'browse-sort-drop-down';
-  const SORT_COMBO_SELECTOR = [
-    `[role="combobox"][id*="${SORT_ID_SUBSTR}"]`,
-    `[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
-  ].join(', ');
   const TARGET_LABELS = [
     "Viewers (High to Low)",
     "Seere (høj-lav)",
@@ -57,7 +52,6 @@
     "視聴者数（降順）",
     "시청자 수 (높은 순)"
   ];
-  const TARGET_LABEL_SET = new Set(TARGET_LABELS.map(normalizeText));
 
   const waitFor = (selector, { timeout = 15000, interval = 150, filter = null } = {}) =>
     new Promise((resolve, reject) => {
@@ -73,12 +67,13 @@
 
   const safeClick = (el) => { try { el.click(); } catch (_) {} };
   const isVisible = (el) => !!(el && (el.offsetParent || el.getClientRects().length));
+
   function normalizeText(text) {
     return (text || '').replace(/\s+/g, ' ').trim();
   }
 
-  function textMatchesTarget(text) {
-    return TARGET_LABEL_SET.has(normalizeText(text));
+  function isTargetLabel(text) {
+    return TARGET_LABELS.includes(normalizeText(text));
   }
 
   function extractOptionLabel(el) {
@@ -90,61 +85,42 @@
     );
   }
 
-  const HEADING_FOCUS_SEL = [
-    'h1.tw-title',
-    'h1[tabindex="-1"]',
-    '[role="heading"].tw-title',
-    '[data-test-selector="channel-header-title"] h1',
-  ].join(',');
+  function blurAfterAutoAction(...relatedEls) {
+    requestAnimationFrame(() => {
+      const activeEl = document.activeElement;
+      if (!activeEl || activeEl === document.body) return;
+      if (!relatedEls.includes(activeEl)) return;
 
-  function defocusWeirdHeading() {
-    const el = document.activeElement;
-
-    if (!el || el === document.body) return;
-
-    if (
-      el.matches(HEADING_FOCUS_SEL) ||
-      ((el.getAttribute('role') === 'heading' || /^H\d$/.test(el.tagName)) && el.tabIndex === -1)
-    ) {
-      try { el.blur(); } catch (_) {}
-    }
+      try { activeEl.blur(); } catch (_) {}
+    });
   }
 
-  (function injectNoOutlineCSS() {
-    const css = `
-      ${HEADING_FOCUS_SEL}:focus { outline: none !important; box-shadow: none !important; }
-    `;
-    const style = document.createElement('style');
-    style.textContent = css;
-    document.documentElement.appendChild(style);
-  })();
-
-  const urlPart = () => {
+  function getNormalizedUrl() {
     const u = new URL(location.href);
     u.searchParams.delete('sort');
     return `${u.pathname}${u.search}`;
-  };
-  const loadPart = () => `${performance.timeOrigin}`;
+  }
 
-  const keyForUrl = () => {
-    if (RUN_POLICY === 'perLoad') return `tw_sort_opt1_${urlPart()}_${loadPart()}`;
-    if (RUN_POLICY === 'perTab')  return `tw_sort_opt1_${urlPart()}`;
+  function getRunKey() {
+    if (RUN_POLICY === 'perLoad') return `tw_sort_viewers_high_to_low_${getNormalizedUrl()}_${performance.timeOrigin}`;
+    if (RUN_POLICY === 'perTab') return `tw_sort_viewers_high_to_low_${getNormalizedUrl()}`;
     return '';
-  };
+  }
 
-  const alreadyRan = () => !!sessionStorage.getItem(keyForUrl());
-  const markRan = () => sessionStorage.setItem(keyForUrl(), '1');
+  const alreadyRan = () => !!sessionStorage.getItem(getRunKey());
+  const markRan = () => sessionStorage.setItem(getRunKey(), '1');
 
-  async function ensureSortOpt1() {
+  async function ensureTargetSort() {
     if (alreadyRan()) return;
 
     try {
-      const combo = await waitFor(SORT_COMBO_SELECTOR);
+      const combo = await waitFor(
+        '[role="combobox"][id*="browse-sort-drop-down"], [role="combobox"][aria-controls*="browse-sort-drop-down"]'
+      );
 
       const labelEl = combo.querySelector('[data-a-target="tw-core-button-label-text"]');
       const labelText = normalizeText(labelEl ? labelEl.textContent : combo.textContent);
-      if (textMatchesTarget(labelText)) {
-        defocusWeirdHeading();
+      if (isTargetLabel(labelText)) {
         markRan();
         return;
       }
@@ -152,23 +128,18 @@
       safeClick(combo);
       const option = await waitFor(
         '[role="menuitemradio"], [role="option"]',
-        { filter: (el) => isVisible(el) && textMatchesTarget(extractOptionLabel(el)) }
+        { filter: (el) => isVisible(el) && isTargetLabel(extractOptionLabel(el)) }
       );
       safeClick(option);
-
-
-      setTimeout(defocusWeirdHeading, 0);
+      blurAfterAutoAction(combo, option);
 
       markRan();
     } catch (_) {
-
-      setTimeout(defocusWeirdHeading, 0);
+      // Ignore transient Twitch render timing failures and try again on the next navigation/load.
     }
   }
 
-  setTimeout(() => { defocusWeirdHeading(); ensureSortOpt1(); }, 500);
-
-  window.addEventListener('focusin', defocusWeirdHeading, true);
+  setTimeout(() => { ensureTargetSort(); }, 500);
 
   (function hookHistory() {
     const fire = () => window.dispatchEvent(new Event('locationchange'));
@@ -179,6 +150,6 @@
   })();
 
   window.addEventListener('locationchange', () => {
-    setTimeout(() => { defocusWeirdHeading(); ensureSortOpt1(); }, 600);
+    setTimeout(() => { ensureTargetSort(); }, 600);
   });
 })();
