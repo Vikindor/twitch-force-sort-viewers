@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch - Force sort Viewers High to Low
 // @namespace    twitch-force-sort-viewers
-// @version      1.8.3
+// @version      1.8.4
 // @description  Auto-set sort to "Viewers High->Low" with configurable run policy
 // @author       Vikindor (https://vikindor.github.io/)
 // @homepageURL  https://github.com/Vikindor/twitch-force-sort-viewers/
@@ -22,7 +22,6 @@
   // ----------------------------------------
   
   const SORT_ID_SUBSTR = 'browse-sort-drop-down';
-  const TARGET_SUFFIX = 'opt1';
   const SORT_COMBO_SELECTOR = [
     `[role="combobox"][id*="${SORT_ID_SUBSTR}"]`,
     `[role="combobox"][aria-controls*="${SORT_ID_SUBSTR}"]`
@@ -58,6 +57,7 @@
     "視聴者数（降順）",
     "시청자 수 (높은 순)"
   ];
+  const TARGET_LABEL_SET = new Set(TARGET_LABELS.map(normalizeText));
 
   const waitFor = (selector, { timeout = 15000, interval = 150, filter = null } = {}) =>
     new Promise((resolve, reject) => {
@@ -72,6 +72,23 @@
     });
 
   const safeClick = (el) => { try { el.click(); } catch (_) {} };
+  const isVisible = (el) => !!(el && (el.offsetParent || el.getClientRects().length));
+  function normalizeText(text) {
+    return (text || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function textMatchesTarget(text) {
+    return TARGET_LABEL_SET.has(normalizeText(text));
+  }
+
+  function extractOptionLabel(el) {
+    return normalizeText(
+      el?.getAttribute('aria-label') ||
+      el?.getAttribute('title') ||
+      el?.textContent ||
+      ''
+    );
+  }
 
   const HEADING_FOCUS_SEL = [
     'h1.tw-title',
@@ -127,15 +144,8 @@
 
 
       const labelEl = combo.querySelector('[data-a-target="tw-core-button-label-text"]');
-      const labelText = (labelEl ? labelEl.textContent : combo.textContent || '').trim();
-      if (TARGET_LABELS.includes(labelText)) {
-        defocusWeirdHeading();
-        markRan();
-        return;
-      }
-
-      const current = combo.getAttribute('aria-activedescendant') || '';
-      if (current.endsWith(TARGET_SUFFIX)) {
+      const labelText = normalizeText(labelEl ? labelEl.textContent : combo.textContent);
+      if (textMatchesTarget(labelText)) {
         defocusWeirdHeading();
         markRan();
         return;
@@ -143,8 +153,8 @@
 
       safeClick(combo);
       const option = await waitFor(
-        `[id$="${TARGET_SUFFIX}"][role="menuitemradio"], [id$="${TARGET_SUFFIX}"][role="option"], [id$="${TARGET_SUFFIX}"]`,
-        { filter: (el) => !!(el.offsetParent || el.getClientRects().length) }
+        '[role="menuitemradio"], [role="option"]',
+        { filter: (el) => isVisible(el) && textMatchesTarget(extractOptionLabel(el)) }
       );
       safeClick(option);
 
