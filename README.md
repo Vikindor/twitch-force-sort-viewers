@@ -5,6 +5,13 @@ Twitch - Force sort Viewers High to Low
 Userscript for browsers that automatically sets the Twitch directory sort option to **“Viewers (High to Low)”**.  
 Works on `/directory`, `/directory/all`, and other Twitch pages with the same sort dropdown.
 
+---
+
+💥 **New:** This userscript is also available as part of **Twitch Enhancer**, a browser extension for **Chrome** and **Firefox** that combines it with other Twitch quality-of-life improvements.  
+Learn more: [Twitch Enhancer](https://github.com/Vikindor/twitch-enhancer-extension)
+
+---
+
 ## ✨ Features
 
 - Forces sorting by *Viewers (High to Low)* on Twitch directory pages.
